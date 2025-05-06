@@ -3,7 +3,7 @@ requires = ["setuptools>=42", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "logseq-chat"
+name = "chat-chain"
 version = "0.1.0"
 description = ""
 readme = "README.md"
@@ -30,10 +30,11 @@ dev = [
     "black",
     "isort",
     "mypy",
+    "python-dotenv",
 ]
 
 [tool.setuptools]
-packages = ["logseq_chat"]
+packages = ["chat-chain"]
 
 [tool.black]
 line-length = 120
