@@ -34,11 +34,11 @@ test = [
 ]
 
 [tool.setuptools]
-packages = ["chat-chain"]
+packages = ["chat_chain"]
 
 [tool.black]
 line-length = 120
-target-version = ["py311"]
+target-version = ["py311", "py312", "py313"]
 
 [tool.isort]
 profile = "black"
