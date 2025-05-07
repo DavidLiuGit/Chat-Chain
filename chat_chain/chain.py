@@ -1,5 +1,5 @@
 from logging import getLogger
-from typing import Annotated, Any, Optional, Union, Callable
+from typing import Annotated, Any, Optional, Callable
 
 from langchain_core.documents import Document
 from langchain_core.language_models import BaseLanguageModel
@@ -29,7 +29,7 @@ class ChatChainProps(BaseModel):
     ]
 
     chat_prompt: Annotated[
-        Union[str, Callable[..., str]],
+        str | Callable[..., str],
         Field(
             description=(
                 "Prompt to use for the LLM. Either a string or a function that returns a string. "
@@ -104,7 +104,6 @@ class ChatChain:
             if self.props.retriever
             else None
         )
-
         return {
             "user_input": user_input,
             "chat_history": chat_history,
@@ -137,7 +136,7 @@ class ChatChain:
 
     def _build_qa_llm_prompt_template(
         self,
-        chat_prompt=Union[str, Callable[..., str]],
+        chat_prompt: str | Callable[..., str],
         retriever_available: bool = False,
     ) -> PromptTemplate:
         """
