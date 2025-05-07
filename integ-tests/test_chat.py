@@ -49,7 +49,7 @@ class TestIntegChatChain(unittest.TestCase):
                 enable_chat_history=True,
             )
         )
-        self.retriever = LogseqJournalDateRangeRetriever(
+        self.logseq_retriever = LogseqJournalDateRangeRetriever(
             contextualizer,
             loader,
         )
@@ -79,3 +79,22 @@ class TestIntegChatChain(unittest.TestCase):
 
         self.assertGreaterEqual(len(history), 4)
         logger.info(history)
+
+    def test_chat_with_logseq_date_range_retriever(self):
+        chat_chain_props = ChatChainProps(
+            chat_llm=self.llm,
+            chat_prompt=(
+                "You are a helpful assistant. Answer the following question based on the provided context."
+            ),
+            retriever=self.logseq_retriever,
+        )
+        chat_chain = ChatChain(chat_chain_props)
+
+        history = []
+        question = "Did I wake up early on Mar 27, 2025?"
+        response = chat_chain.chat_and_update_history(question, history)
+        self.assertEqual(len(history), 2)
+
+        response = chat_chain.chat_and_update_history("What did I do on the next day? Include the date.", history)
+        self.assertIn("28", response)
+        logger.info(response)
