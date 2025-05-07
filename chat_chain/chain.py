@@ -11,7 +11,6 @@ from langchain_core.runnables import Runnable
 from langchain_core.retrievers import BaseRetriever
 from pydantic import BaseModel, Field
 
-from chat_chain.utils.bedrock_api import get_bedrock_client_from_environ
 from chat_chain.utils.telemetry import _enable_logging
 from chat_chain.utils.chat_prompt_template import (
     QA_CHAIN_LLM_PROMPT_TEPLATE,
