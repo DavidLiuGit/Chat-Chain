@@ -58,7 +58,20 @@ class ChatChain:
         self.props = chat_chain_props
         self.qa_chain: Runnable = self._build_question_and_answer_chain()
 
-    def chat(self, user_input: str, chat_history: list[BaseMessage] = []) -> str:  
+    def chat(self, user_input: str, chat_history: list[BaseMessage] = []) -> str:
+        """
+        Invoke the `ChatChain`, and return the Q&A chain's output. The process will vary based on
+        the properties that this chain was initially set up with.
+
+        Args:
+            user_input (`str`): User's latest input
+            chat_history (`list[BaseMessage]`, optional): Structured chat history.
+                Use `ChatChain.build_structured_chat_history` to build an instance.
+                Defaults to [].
+
+        Returns:
+            str: Q&A LLM's output, as a string.
+        """
         return self.qa_chain.invoke(self._build_chain_input(user_input, chat_history))
         
     def chat_and_update_history(self, user_input: str, chat_history: list[BaseMessage] = []) -> str:
@@ -69,6 +82,20 @@ class ChatChain:
         return output
     
     def stream(self, user_input: str, chat_history: list[BaseMessage] = []) -> Iterator[str]:
+        """
+        Invoke the `ChatChain`, and **stream** the Q&A chain's output. The process will vary based on
+        the properties that this chain was initially set up with.
+
+        Args:
+            user_input (`str`): User's latest input
+            chat_history (`list[BaseMessage]`, optional): Structured chat history.
+                Use `ChatChain.build_structured_chat_history` to build an instance.
+                Defaults to [].
+
+        Returns:
+            str: Q&A LLM's output, 1 *chunk* at a time.
+                Use `for chunk in chain.stream()` to handle output chunks.
+        """
         for chunk in self.qa_chain.stream(self._build_chain_input(user_input, chat_history)):
             yield chunk
 
