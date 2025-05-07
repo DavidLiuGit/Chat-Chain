@@ -5,10 +5,10 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "chat-chain"
 version = "0.1.0"
-description = ""
+description = "Extensible Langchain Q&A with RAG implementation."
 readme = "README.md"
 authors = [
-    {name = "DL", email = "your.email@example.com"}
+    {name = "DL", email = "v49t9zpqd@mozmail.com"}
 ]
 requires-python = ">=3.11"
 classifiers = [
@@ -18,6 +18,7 @@ classifiers = [
 ]
 
 dependencies = [
+    "langchain>=0.3.24,<0.4.0",
     "pydantic==2.11.*",
 ]
 
