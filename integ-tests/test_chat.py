@@ -3,6 +3,7 @@ import unittest
 
 from langchain_aws import ChatBedrock
 from langchain_core.messages import HumanMessage, AIMessage
+from langchain_core.output_parsers import StrOutputParser
 
 from langchain_logseq.loaders.journal_filesystem_loader import LogseqJournalFilesystemLoader
 from langchain_logseq.loaders.journal_loader_input import LogseqJournalLoaderInput
@@ -31,6 +32,7 @@ class TestIntegChatChain(unittest.TestCase):
             model_kwargs={
                 "temperature": 0.69,
             },
+            streaming=True,
         )
 
         # set up Retriever dependencies
@@ -68,7 +70,7 @@ class TestIntegChatChain(unittest.TestCase):
         chat_chain = ChatChain(chat_chain_props)
 
         history = []
-        question = "What is the capital of France? Give me just its name."
+        question = "What is the capital of France? Tell me only its name."
         response = chat_chain.chat(question)
         history.append(HumanMessage(content=question))
         history.append(AIMessage(content=response))
@@ -98,3 +100,20 @@ class TestIntegChatChain(unittest.TestCase):
         response = chat_chain.chat_and_update_history("What did I do on the next day? Include the date.", history)
         self.assertIn("28", response)
         logger.info(response)
+        
+    def test_chat_streaming(self):
+        chat_chain_props = ChatChainProps(
+            chat_llm=self.llm,
+            chat_prompt=(
+                "You are a helpful assistant. Answer the following question based on the"
+                " provided context. If you don't know the answer, just say that you don't know."
+                " Don't make up an answer."
+            ),
+            retriever=None,
+        )
+        chat_chain = ChatChain(chat_chain_props)
+        history = []
+        
+        gen = chat_chain.stream("What is the capital of France?", history)
+        for chunk in gen:
+            logger.info(chunk)

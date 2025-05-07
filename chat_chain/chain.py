@@ -1,5 +1,5 @@
 from logging import getLogger
-from typing import Annotated, Optional, Union, Callable
+from typing import Annotated, Any, Callable, Iterator, Optional
 
 from langchain_core.documents import Document
 from langchain_core.language_models import BaseLanguageModel
@@ -29,7 +29,7 @@ class ChatChainProps(BaseModel):
     ]
 
     chat_prompt: Annotated[
-        Union[str, Callable[..., str]],
+        str | Callable[..., str],
         Field(
             description=(
                 "Prompt to use for the LLM. Either a string or a function that returns a string. "
@@ -59,21 +59,20 @@ class ChatChain:
         self.qa_chain: Runnable = self._build_question_and_answer_chain()
 
     def chat(self, user_input: str, chat_history: list[BaseMessage] = []) -> str:
-        # if a Retriever was provided, use it to attempt to inject context prior to the response
-        context_documents: Optional[list[Document]] = (
-            self.props.retriever.invoke({"user_input": user_input, "chat_history": chat_history})
-            if self.props.retriever
-            else None
-        )
+        """
+        Invoke the `ChatChain`, and return the Q&A chain's output. The process will vary based on
+        the properties that this chain was initially set up with.
 
-        # feed into chain, extract output
-        return self.qa_chain.invoke(
-            {
-                "user_input": user_input,
-                "chat_history": chat_history,
-                "document_context": context_documents,
-            }
-        )
+        Args:
+            user_input (`str`): User's latest input
+            chat_history (`list[BaseMessage]`, optional): Structured chat history.
+                Use `ChatChain.build_structured_chat_history` to build an instance.
+                Defaults to [].
+
+        Returns:
+            str: Q&A LLM's output, as a string.
+        """
+        return self.qa_chain.invoke(self._build_chain_input(user_input, chat_history))
         
     def chat_and_update_history(self, user_input: str, chat_history: list[BaseMessage] = []) -> str:
         """Convenience method: calls `self.chat()` and updates the chat_history. Returns chat() output."""
@@ -81,6 +80,25 @@ class ChatChain:
         chat_history.append(HumanMessage(content=user_input))
         chat_history.append(AIMessage(content=output))
         return output
+    
+    def stream(self, user_input: str, chat_history: list[BaseMessage] = []) -> Iterator[str]:
+        """
+        Invoke the `ChatChain`, and **stream** the Q&A chain's output. The process will vary based on
+        the properties that this chain was initially set up with.
+
+        Args:
+            user_input (`str`): User's latest input
+            chat_history (`list[BaseMessage]`, optional): Structured chat history.
+                Use `ChatChain.build_structured_chat_history` to build an instance.
+                Defaults to [].
+
+        Returns:
+            str: Q&A LLM's output, 1 *chunk* at a time.
+                Use `for chunk in chain.stream()` to handle output chunks.
+        """
+        for chunk in self.qa_chain.stream(self._build_chain_input(user_input, chat_history)):
+            yield chunk
+
 
     @staticmethod
     def build_structured_chat_history(unstructured_chat_history: list[tuple[str, str]]) -> list[BaseMessage]:
@@ -107,9 +125,24 @@ class ChatChain:
             # if the agent is not one of the above, ignore it
         return output
 
-    def _build_question_and_answer_chain(
-        self,
-    ) -> Runnable:
+    def _build_chain_input(self, user_input: str, chat_history: list[BaseMessage] = []) -> dict[str, Any]:
+        """
+        Using the latest `user_input` and `chat_history`, return a dict representing the input to
+        the Q&A chain. Should include `user_input`, `chat_history`, and `document_context`, if applicable.
+        """
+        # if a Retriever was provided, use it to attempt to inject context prior to the response
+        context_documents: Optional[list[Document]] = (
+            self.props.retriever.invoke({"user_input": user_input, "chat_history": chat_history})
+            if self.props.retriever
+            else None
+        )
+        return {
+            "user_input": user_input,
+            "chat_history": chat_history,
+            "document_context": context_documents,
+        }
+
+    def _build_question_and_answer_chain(self) -> Runnable:
         """
         Build the Q&A chain that will be invoked to respond to the user's input.
         """
@@ -127,13 +160,12 @@ class ChatChain:
             self.qa_prompt_template
             | (lambda x: logger.debug(f"Q&A prompt: {x}") or x)  # can enable for debugging, will not fail
             | self.props.chat_llm
-            | (lambda x: logger.debug(f"Q&A LLM output: {x}") or x)
             | StrOutputParser()
         )
 
     def _build_qa_llm_prompt_template(
         self,
-        chat_prompt=Union[str, Callable[..., str]],
+        chat_prompt: str | Callable[..., str],
         retriever_available: bool = False,
     ) -> PromptTemplate:
         """
