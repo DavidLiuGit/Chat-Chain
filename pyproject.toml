@@ -19,18 +19,18 @@ classifiers = [
 
 dependencies = [
     "pydantic==2.11.*",
-    "fastapi",
-    "boto3",
-    "boto3-stubs",
-    "langchain-logseq @ git+https://github.com/DavidLiuGit/Langchain-Logseq.git",
 ]
 
 [project.optional-dependencies]
 dev = [
     "black",
-    "isort",
-    "mypy",
+]
+test = [
     "python-dotenv",
+    "boto3",
+    "boto3-stubs",
+    "langchain-aws",
+    "langchain-logseq @ git+https://github.com/DavidLiuGit/Langchain-Logseq.git",
 ]
 
 [tool.setuptools]
