@@ -22,14 +22,14 @@ class TestIntegChatChain(unittest.TestCase):
     def setUp(self):
         _enable_logging()
         self.bedrock_client = get_bedrock_client_from_environ()
-        
+
         # pre-build chain components
         # use a low-cost Claude model for integ testing
         self.llm = ChatBedrock(
             client=self.bedrock_client,
             model_id="anthropic.claude-3-haiku-20240307-v1:0",
             model_kwargs={
-                "temperature": 0.3,
+                "temperature": 0.69,
             },
         )
 
@@ -55,6 +55,7 @@ class TestIntegChatChain(unittest.TestCase):
         )
 
     def test_chat_without_retriever(self):
+        """With and without chat history fed in"""
         chat_chain_props = ChatChainProps(
             chat_llm=self.llm,
             chat_prompt=(
@@ -65,5 +66,16 @@ class TestIntegChatChain(unittest.TestCase):
             retriever=None,
         )
         chat_chain = ChatChain(chat_chain_props)
-        response = chat_chain.chat("What is the capital of France?")
-        logger.info(response)
+
+        history = []
+        question = "What is the capital of France? Give me just its name."
+        response = chat_chain.chat(question)
+        history.append(HumanMessage(content=question))
+        history.append(AIMessage(content=response))
+        self.assertEqual(response, "Paris.")
+
+        question = "Is the Eiffel Tower in that city?"
+        response = chat_chain.chat_and_update_history(question, history)
+
+        self.assertGreaterEqual(len(history), 4)
+        logger.info(history)
