@@ -1,5 +1,5 @@
 from logging import getLogger
-from typing import Annotated, Optional, Union, Callable
+from typing import Annotated, Any, Optional, Union, Callable
 
 from langchain_core.documents import Document
 from langchain_core.language_models import BaseLanguageModel
@@ -58,22 +58,8 @@ class ChatChain:
         self.props = chat_chain_props
         self.qa_chain: Runnable = self._build_question_and_answer_chain()
 
-    def chat(self, user_input: str, chat_history: list[BaseMessage] = []) -> str:
-        # if a Retriever was provided, use it to attempt to inject context prior to the response
-        context_documents: Optional[list[Document]] = (
-            self.props.retriever.invoke({"user_input": user_input, "chat_history": chat_history})
-            if self.props.retriever
-            else None
-        )
-
-        # feed into chain, extract output
-        return self.qa_chain.invoke(
-            {
-                "user_input": user_input,
-                "chat_history": chat_history,
-                "document_context": context_documents,
-            }
-        )
+    def chat(self, user_input: str, chat_history: list[BaseMessage] = [], stream: bool = False) -> str:  
+        return self.qa_chain.invoke(self._build_chain_input(user_input, chat_history))
         
     def chat_and_update_history(self, user_input: str, chat_history: list[BaseMessage] = []) -> str:
         """Convenience method: calls `self.chat()` and updates the chat_history. Returns chat() output."""
@@ -106,6 +92,24 @@ class ChatChain:
                 output.append(SystemMessage(content=input_msg[1]))
             # if the agent is not one of the above, ignore it
         return output
+
+    def _build_chain_input(self, user_input: str, chat_history: list[BaseMessage] = []) -> dict[str, Any]:
+        """
+        Using the latest `user_input` and `chat_history`, return a dict representing the input to
+        the Q&A chain. Should include `user_input`, `chat_history`, and `document_context`, if applicable.
+        """
+        # if a Retriever was provided, use it to attempt to inject context prior to the response
+        context_documents: Optional[list[Document]] = (
+            self.props.retriever.invoke({"user_input": user_input, "chat_history": chat_history})
+            if self.props.retriever
+            else None
+        )
+
+        return {
+            "user_input": user_input,
+            "chat_history": chat_history,
+            "document_context": context_documents,
+        }
 
     def _build_question_and_answer_chain(
         self,
