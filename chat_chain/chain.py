@@ -1,5 +1,5 @@
 from logging import getLogger
-from typing import Annotated, Any, Optional, Callable
+from typing import Annotated, Any, Callable, Iterator, Optional
 
 from langchain_core.documents import Document
 from langchain_core.language_models import BaseLanguageModel
@@ -58,7 +58,7 @@ class ChatChain:
         self.props = chat_chain_props
         self.qa_chain: Runnable = self._build_question_and_answer_chain()
 
-    def chat(self, user_input: str, chat_history: list[BaseMessage] = [], stream: bool = False) -> str:  
+    def chat(self, user_input: str, chat_history: list[BaseMessage] = []) -> str:  
         return self.qa_chain.invoke(self._build_chain_input(user_input, chat_history))
         
     def chat_and_update_history(self, user_input: str, chat_history: list[BaseMessage] = []) -> str:
@@ -67,6 +67,11 @@ class ChatChain:
         chat_history.append(HumanMessage(content=user_input))
         chat_history.append(AIMessage(content=output))
         return output
+    
+    def stream(self, user_input: str, chat_history: list[BaseMessage] = []) -> Iterator[str]:
+        for chunk in self.qa_chain.stream(self._build_chain_input(user_input, chat_history)):
+            yield chunk
+
 
     @staticmethod
     def build_structured_chat_history(unstructured_chat_history: list[tuple[str, str]]) -> list[BaseMessage]:
@@ -110,9 +115,7 @@ class ChatChain:
             "document_context": context_documents,
         }
 
-    def _build_question_and_answer_chain(
-        self,
-    ) -> Runnable:
+    def _build_question_and_answer_chain(self) -> Runnable:
         """
         Build the Q&A chain that will be invoked to respond to the user's input.
         """
@@ -130,7 +133,6 @@ class ChatChain:
             self.qa_prompt_template
             | (lambda x: logger.debug(f"Q&A prompt: {x}") or x)  # can enable for debugging, will not fail
             | self.props.chat_llm
-            | (lambda x: logger.debug(f"Q&A LLM output: {x}") or x)
             | StrOutputParser()
         )
 
