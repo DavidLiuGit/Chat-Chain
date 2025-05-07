@@ -1,5 +1,4 @@
 from logging import getLogger
-from textwrap import dedent
 from typing import Annotated, Optional, Union, Callable
 
 from langchain_core.documents import Document
