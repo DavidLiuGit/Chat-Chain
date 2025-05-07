@@ -11,7 +11,6 @@ from langchain_core.runnables import Runnable
 from langchain_core.retrievers import BaseRetriever
 from pydantic import BaseModel, Field
 
-from chat_chain.utils.bedrock_api import get_bedrock_client_from_environ
 from chat_chain.utils.telemetry import _enable_logging
 from chat_chain.utils.chat_prompt_template import (
     QA_CHAIN_LLM_PROMPT_TEPLATE,
@@ -60,7 +59,7 @@ class ChatChain:
         self.props = chat_chain_props
         self.qa_chain: Runnable = self._build_question_and_answer_chain()
 
-    def chat(self, user_input: str, chat_history: list[BaseMessage]) -> str:
+    def chat(self, user_input: str, chat_history: list[BaseMessage] = []) -> str:
         # if a Retriever was provided, use it to attempt to inject context prior to the response
         context_documents: Optional[list[Document]] = (
             self.props.retriever.invoke({"user_input": user_input, "chat_history": chat_history})
@@ -76,6 +75,13 @@ class ChatChain:
                 "document_context": context_documents,
             }
         )
+        
+    def chat_and_update_history(self, user_input: str, chat_history: list[BaseMessage] = []) -> str:
+        """Convenience method: calls `self.chat()` and updates the chat_history. Returns chat() output."""
+        output = self.chat(user_input, chat_history)
+        chat_history.append(HumanMessage(content=user_input))
+        chat_history.append(AIMessage(content=output))
+        return output
 
     @staticmethod
     def build_structured_chat_history(unstructured_chat_history: list[tuple[str, str]]) -> list[BaseMessage]:
@@ -120,9 +126,10 @@ class ChatChain:
 
         return (
             self.qa_prompt_template
-            | (lambda x: logger.debug(f"Contextualizer prompt: {x}") or x)  # can enable for debugging, will not fail
+            | (lambda x: logger.debug(f"Q&A prompt: {x}") or x)  # can enable for debugging, will not fail
             | self.props.chat_llm
-            | StrOutputParser
+            | (lambda x: logger.debug(f"Q&A LLM output: {x}") or x)
+            | StrOutputParser()
         )
 
     def _build_qa_llm_prompt_template(
