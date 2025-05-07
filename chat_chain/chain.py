@@ -75,6 +75,13 @@ class ChatChain:
                 "document_context": context_documents,
             }
         )
+        
+    def chat_and_update_history(self, user_input: str, chat_history: list[BaseMessage] = []) -> str:
+        """Convenience method: calls `self.chat()` and updates the chat_history. Returns chat() output."""
+        output = self.chat(user_input, chat_history)
+        chat_history.append(HumanMessage(content=user_input))
+        chat_history.append(AIMessage(content=output))
+        return output
 
     @staticmethod
     def build_structured_chat_history(unstructured_chat_history: list[tuple[str, str]]) -> list[BaseMessage]:
