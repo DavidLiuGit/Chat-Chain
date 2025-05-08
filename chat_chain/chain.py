@@ -6,7 +6,7 @@ from langchain_core.language_models import BaseLanguageModel
 from langchain_core.messages import BaseMessage, HumanMessage, AIMessage, SystemMessage
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import PromptTemplate
-from langchain_core.runnables import Runnable
+from langchain_core.runnables import RunnableSerializable
 from langchain_core.retrievers import BaseRetriever
 from pydantic import BaseModel, Field
 
@@ -56,7 +56,7 @@ class ChatChain:
         chat_chain_props: ChatChainProps,
     ):
         self.props = chat_chain_props
-        self.qa_chain: Runnable = self._build_question_and_answer_chain()
+        self.qa_chain: RunnableSerializable = self._build_question_and_answer_chain()
 
     def chat(self, user_input: str, chat_history: list[BaseMessage] = []) -> str:
         """
@@ -142,7 +142,7 @@ class ChatChain:
             "document_context": context_documents,
         }
 
-    def _build_question_and_answer_chain(self) -> Runnable:
+    def _build_question_and_answer_chain(self) -> RunnableSerializable:
         """
         Build the Q&A chain that will be invoked to respond to the user's input.
         """
