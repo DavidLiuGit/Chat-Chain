@@ -3,7 +3,7 @@ import unittest
 
 from langchain_aws import ChatBedrock
 from langchain_core.messages import HumanMessage, AIMessage
-from langchain_core.output_parsers import StrOutputParser
+from langchain_core.runnables import RunnableSerializable
 
 from langchain_logseq.loaders.journal_filesystem_loader import LogseqJournalFilesystemLoader
 from langchain_logseq.loaders.journal_loader_input import LogseqJournalLoaderInput
@@ -37,7 +37,7 @@ class TestIntegChatChain(unittest.TestCase):
 
         # set up Retriever dependencies
         # this path is available IFF using langchain-logseq as editable:
-        test_journal_path = "./venv/src/langchain-logseq/tests/loaders/test_journals"
+        test_journal_path = "./integ-tests/test_journals"
         loader = LogseqJournalFilesystemLoader(test_journal_path)
         contextualizer = RetrieverContextualizer(
             RetrieverContextualizerProps(
@@ -68,6 +68,8 @@ class TestIntegChatChain(unittest.TestCase):
             retriever=None,
         )
         chat_chain = ChatChain(chat_chain_props)
+        self.assertIsInstance(chat_chain, ChatChain)
+        self.assertIsInstance(chat_chain.qa_chain, RunnableSerializable)
 
         history = []
         question = "What is the capital of France? Tell me only its name."
