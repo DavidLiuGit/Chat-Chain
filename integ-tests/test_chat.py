@@ -28,7 +28,8 @@ class TestIntegChatChain(unittest.TestCase):
         # use a low-cost Claude model for integ testing
         self.llm = ChatBedrock(
             client=self.bedrock_client,
-            model_id="anthropic.claude-3-haiku-20240307-v1:0",
+            model_id="us.anthropic.claude-3-5-haiku-20241022-v1:0",
+            # model_id="us.anthropic.claude-3-7-sonnet-20250219-v1:0",
             model_kwargs={
                 "temperature": 0.69,
             },
@@ -76,7 +77,7 @@ class TestIntegChatChain(unittest.TestCase):
         response = chat_chain.chat(question)
         history.append(HumanMessage(content=question))
         history.append(AIMessage(content=response))
-        self.assertEqual(response, "Paris.")
+        self.assertTrue("Paris" in response)
 
         question = "Is the Eiffel Tower in that city?"
         response = chat_chain.chat_and_update_history(question, history)

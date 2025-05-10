@@ -1,5 +1,5 @@
 from logging import getLogger
-from typing import Annotated, Any, Callable, Iterator, Optional
+from typing import Annotated, Any, Callable, Iterator, Literal, Optional
 
 from langchain_core.documents import Document
 from langchain_core.language_models import BaseLanguageModel
@@ -73,6 +73,22 @@ class ChatChain:
             str: Q&A LLM's output, as a string.
         """
         return self.qa_chain.invoke(self._build_chain_input(user_input, chat_history))
+    
+    def achat(self, user_input: str, chat_history: list[BaseMessage] = []) -> str:
+        """
+        Invoke the `ChatChain`, and return the Q&A chain's output. The process will vary based on
+        the properties that this chain was initially set up with.
+
+        Args:
+            user_input (`str`): User's latest input
+            chat_history (`list[BaseMessage]`, optional): Structured chat history.
+                Use `ChatChain.build_structured_chat_history` to build an instance.
+                Defaults to [].
+
+        Returns:
+            str: Q&A LLM's output, as a string.
+        """
+        return self.qa_chain.ainvoke(self._build_chain_input(user_input, chat_history))
         
     def chat_and_update_history(self, user_input: str, chat_history: list[BaseMessage] = []) -> str:
         """Convenience method: calls `self.chat()` and updates the chat_history. Returns chat() output."""
@@ -101,7 +117,9 @@ class ChatChain:
 
 
     @staticmethod
-    def build_structured_chat_history(unstructured_chat_history: list[tuple[str, str]]) -> list[BaseMessage]:
+    def build_structured_chat_history(
+        unstructured_chat_history: list[tuple[str, str] | dict[str, str]]
+    ) -> list[BaseMessage]:
         """
         Convert a list of chat messages to a structured `list[BaseMessage]`, required by the `chat` method.
         Each tuple in `unstructured_chat_history` is expected to have the format (actor, message_str). e.g.:
@@ -114,15 +132,25 @@ class ChatChain:
         ```
         """
         output: list[BaseMessage] = []
-        for input_msg in unstructured_chat_history:
-            agent = input_msg[0].lower()
-            if agent == "human":
-                output.append(HumanMessage(content=input_msg[1]))
-            elif agent == "ai":
-                output.append(AIMessage(content=input_msg[1]))
-            elif agent == "system":
-                output.append(SystemMessage(content=input_msg[1]))
-            # if the agent is not one of the above, ignore it
+        if isinstance(unstructured_chat_history[0], list):
+            for input_msg in unstructured_chat_history:
+                agent = input_msg[0].lower()
+                if agent == "human":
+                    output.append(HumanMessage(content=input_msg[1]))
+                elif agent == "ai":
+                    output.append(AIMessage(content=input_msg[1]))
+                elif agent == "system":
+                    output.append(SystemMessage(content=input_msg[1]))
+                # if the agent is not one of the above, ignore it
+        elif isinstance(unstructured_chat_history[0], dict):
+            for input_msg in unstructured_chat_history:
+                agent = input_msg["agent"].lower()
+                if agent == "human":
+                    output.append(HumanMessage(content=input_msg["message"]))
+                elif agent == "ai":
+                    output.append(AIMessage(content=input_msg["message"]))
+                elif agent == "system":
+                    output.append(SystemMessage(content=input_msg["message"]))
         return output
 
     def _build_chain_input(self, user_input: str, chat_history: list[BaseMessage] = []) -> dict[str, Any]:
