@@ -131,6 +131,9 @@ class ChatChain:
         ]
         ```
         """
+        if not bool(unstructured_chat_history):
+            return []
+
         output: list[BaseMessage] = []
         if isinstance(unstructured_chat_history[0], list):
             for input_msg in unstructured_chat_history:
