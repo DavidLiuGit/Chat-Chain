@@ -30,7 +30,7 @@ test = [
     "boto3",
     "boto3-stubs",
     "langchain-aws",
-    "langchain-logseq @ git+https://github.com/DavidLiuGit/Langchain-Logseq.git",
+    "langchain-logseq",
 ]
 
 [tool.setuptools]
